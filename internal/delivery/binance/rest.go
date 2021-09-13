@@ -2,6 +2,7 @@ package binance
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 
 // restDepthDelivery delivers via REST.
 func (p *DeliveryProvider) restDepthDelivery(ctx context.Context, symbol string, limit int, dataCh chan *domain.Depth) {
-	log.Infof("order book fetcher for %s has been successfully launched", symbol)
+	log.Infof("order book provider for %s has been successfully launched", symbol)
 
 	ticker := time.NewTicker(p.rate)
 	defer ticker.Stop()
@@ -24,7 +25,7 @@ func (p *DeliveryProvider) restDepthDelivery(ctx context.Context, symbol string,
 			depth, err := p.getDepth(symbol, limit)
 			if err != nil {
 				log.Errorf("getDepth: %v", err)
-				log.Infof("order book fetcher for %s stopped", symbol)
+				log.Infof("order book provider for %s stopped", symbol)
 				close(dataCh)
 				return
 			}
@@ -38,7 +39,7 @@ func (p *DeliveryProvider) restDepthDelivery(ctx context.Context, symbol string,
 				dataCh <- depth
 			}
 		case <-ctx.Done():
-			log.Infof("order book fetcher for %s has been successfully completed", symbol)
+			log.Infof("order book provider for %s has been successfully completed", symbol)
 			return
 		}
 	}
@@ -68,9 +69,10 @@ func (p *DeliveryProvider) getDepth(symbol string, limit int) (*domain.Depth, er
 	if err != nil {
 		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
-	depth, err := parseJSON(bytes)
+	var depth domain.Depth
+	err = json.Unmarshal(bytes, &depth)
 	if err != nil {
-		return nil, fmt.Errorf("parseJSON: %v", err)
+		return nil, fmt.Errorf("json unmarshal: %v", err)
 	}
-	return depth, nil
+	return &depth, nil
 }
