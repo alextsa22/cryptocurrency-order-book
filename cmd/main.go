@@ -56,7 +56,7 @@ func main() {
 	log.Infof("data channel for %s successfully received", *trackSymbol)
 
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	log.Infof("start application...")
 	fmt.Println()
@@ -83,6 +83,7 @@ func printDepth(symbol string, depth *domain.Depth) {
 	fmt.Println("Asks:")
 	printOrders(depth.Asks)
 	fmt.Printf("\tSum of order quantity: %.5f\n", depth.SumOfAsksQuantity())
+	fmt.Println()
 }
 
 func printOrders(orders []*domain.Order) {
