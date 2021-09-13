@@ -3,11 +3,12 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/alextsa22/cryptocurrency-order-book/internal/delivery"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/alextsa22/cryptocurrency-order-book/internal/config"
+	"github.com/alextsa22/cryptocurrency-order-book/internal/delivery"
 	"github.com/alextsa22/cryptocurrency-order-book/internal/domain"
 )
 
@@ -32,10 +33,11 @@ func NewDeliveryService(serviceConfig *config.ServiceConfig, deliveryProvider de
 	}
 
 	service := DeliveryService{
-		symbols:      symbols,
-		limit:        serviceConfig.Limit,
-		rate:         time.Duration(serviceConfig.Rate) * time.Second,
-		dataChannels: dataChannels,
+		symbols:          symbols,
+		limit:            serviceConfig.Limit,
+		rate:             time.Duration(serviceConfig.Rate) * time.Second,
+		dataChannels:     dataChannels,
+		deliveryProvider: deliveryProvider,
 	}
 	return &service, nil
 }
@@ -67,4 +69,18 @@ func (s *DeliveryService) RunProviders(wg *sync.WaitGroup) (context.Context, con
 	}
 	time.Sleep(time.Second) // give a little time to initialize the goroutines
 	return ctx, cancel
+}
+
+// normalizeSymbolsList normalizes symbols in a slice using normalizeSymbol.
+func normalizeSymbolsList(symbols []string) {
+	for i, symbol := range symbols {
+		symbols[i] = normalizeSymbol(symbol)
+	}
+}
+
+// normalizeSymbol converts the string with the symbol to the desired form.
+func normalizeSymbol(symbol string) string {
+	symbol = strings.TrimSpace(symbol)
+	symbol = strings.ToUpper(symbol)
+	return symbol
 }

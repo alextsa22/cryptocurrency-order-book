@@ -24,7 +24,7 @@ func (p *DeliveryProvider) wsDepthDelivery(ctx context.Context, symbol string, l
 
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Printf("connection error: %v", err)
+		log.Printf("websocket connection error with default dialer: %v", err)
 		close(dataCh)
 		return
 	}
@@ -34,7 +34,7 @@ func (p *DeliveryProvider) wsDepthDelivery(ctx context.Context, symbol string, l
 	for {
 		err := conn.ReadJSON(&depth)
 		if err != nil {
-			log.Printf("read json error: %v", err)
+			log.Printf("json read error: %v", err)
 			close(dataCh)
 			return
 		}
