@@ -10,18 +10,32 @@ import (
 	"github.com/alextsa22/cryptocurrency-order-book/internal/domain"
 )
 
+type DeliveryMethod int
+
+const (
+	RestMethod = iota
+	WebSocket
+)
+
 type DeliveryProvider struct {
 	apiConfig *binance.ApiConfig
-	rate time.Duration
+	method    DeliveryMethod
+	rate      time.Duration
 }
 
-func NewDeliveryProvider(serviceConfig *config.ServiceConfig, apiConfig *binance.ApiConfig) delivery.DepthDeliveryProvider {
+func NewDeliveryProvider(serviceConfig *config.ServiceConfig, apiConfig *binance.ApiConfig, method DeliveryMethod) delivery.DepthDeliveryProvider {
 	return &DeliveryProvider{
 		apiConfig: apiConfig,
-		rate: time.Duration(serviceConfig.Rate) * time.Second,
+		method:    method,
+		rate:      time.Duration(serviceConfig.Rate) * time.Second,
 	}
 }
 
 func (p *DeliveryProvider) DepthDelivery(ctx context.Context, symbol string, limit int, dataCh chan *domain.Depth) {
-	p.restDepthDelivery(ctx, symbol, limit, dataCh)
+	switch p.method {
+	case RestMethod:
+		p.restDepthDelivery(ctx, symbol, limit, dataCh)
+	case WebSocket:
+		p.wsDepthDelivery(ctx, symbol, limit, dataCh)
+	}
 }
