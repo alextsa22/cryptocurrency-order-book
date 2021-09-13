@@ -111,9 +111,9 @@ func fetchDepth(symbol string, limit int) (*domain.Depth, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
-	return parseJSON(bytes)
-}
-
-func parseJSON(data []byte) (*domain.Depth, error) {
-	return nil, nil
+	depth, err := parseJSON(bytes)
+	if err != nil {
+		return nil, fmt.Errorf("parseJSON: %v", err)
+	}
+	return depth, nil
 }
