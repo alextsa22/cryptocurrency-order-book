@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/alextsa22/cryptocurrency-order-book/internal/delivery"
 	"sync"
 	"time"
 
@@ -12,14 +13,15 @@ import (
 
 // DeliveryService implement DeliveryManager
 type DeliveryService struct {
-	symbols     []string
-	limit       int
-	fetcherRate time.Duration
+	symbols []string
+	limit   int
+	rate    time.Duration
 	// dataChannels connects a symbol and a channel to receive data about this symbol.
 	dataChannels     map[string]chan *domain.Depth
+	deliveryProvider delivery.DepthDeliveryProvider
 }
 
-func NewDeliveryService(serviceConfig *config.ServiceConfig) (DeliveryManager, error) {
+func NewDeliveryService(serviceConfig *config.ServiceConfig, deliveryProvider delivery.DepthDeliveryProvider) (DeliveryManager, error) {
 	symbols := serviceConfig.Symbols
 	normalizeSymbolsList(symbols)
 
@@ -32,7 +34,7 @@ func NewDeliveryService(serviceConfig *config.ServiceConfig) (DeliveryManager, e
 	service := DeliveryService{
 		symbols:      symbols,
 		limit:        serviceConfig.Limit,
-		fetcherRate:  time.Duration(serviceConfig.Rate) * time.Second,
+		rate:         time.Duration(serviceConfig.Rate) * time.Second,
 		dataChannels: dataChannels,
 	}
 	return &service, nil
@@ -60,7 +62,7 @@ func (s *DeliveryService) RunProviders(wg *sync.WaitGroup) (context.Context, con
 		wg.Add(1)
 		go func(symbol string, dataCh chan *domain.Depth) {
 			defer wg.Done()
-			// TODO: run provider
+			s.deliveryProvider.DepthDelivery(ctx, symbol, s.limit, dataCh)
 		}(symbol, ch)
 	}
 	time.Sleep(time.Second) // give a little time to initialize the goroutines
