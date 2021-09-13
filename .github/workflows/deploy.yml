@@ -1,0 +1,15 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build container
+        run: |
+          docker build -t test-build .
