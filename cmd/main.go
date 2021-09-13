@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -64,6 +65,8 @@ LOOP:
 }
 
 func printDepth(symbol string, depth *domain.Depth) {
+	symbol = strings.TrimSpace(symbol)
+	symbol = strings.ToUpper(symbol)
 	fmt.Printf("Symbol: %s    Last Update: %d\n", symbol, depth.LastUpdateId)
 	fmt.Println("Bids:")
 	printOrders(depth.Bids)
