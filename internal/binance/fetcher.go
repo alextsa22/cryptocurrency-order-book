@@ -99,6 +99,8 @@ func (f *DepthFetcher) runFetcher(ctx context.Context, symbol string, dataCh cha
 			depth, err := fetchDepth(symbol, f.limit)
 			if err != nil {
 				log.Errorf("fetchDepth: %v", err)
+				log.Infof("order book fetcher for %s stopped", symbol)
+				close(dataCh)
 				return
 			}
 			select {
@@ -132,6 +134,10 @@ func fetchDepth(symbol string, limit int) (*domain.Depth, error) {
 			log.Errorf("response body closing error: %v", err)
 		}
 	}()
+
+	if resp.StatusCode == http.StatusBadRequest {
+		return nil, fmt.Errorf("bad reguest with this '%s' symbol and this limit %d", symbol, limit)
+	}
 
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {

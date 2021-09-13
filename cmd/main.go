@@ -50,8 +50,11 @@ func main() {
 
 	dataCh, err := depthService.GetDataChannel(*trackSymbol)
 	if err != nil {
+		log.Errorf("error receiving data channel for the %s symbol: %v", *trackSymbol, err)
 		cancel()
-		log.Fatalf("error receiving data channel for the %s symbol: %v", *trackSymbol, err)
+		wg.Wait()
+		log.Println("all fetchers stopped")
+		return
 	}
 	log.Infof("data channel for %s successfully received", *trackSymbol)
 
@@ -59,20 +62,28 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	log.Infof("start application...")
-	fmt.Println()
+
 LOOP:
 	for {
 		select {
 		case <-quit:
+			log.Infoln("graceful shutdown")
 			cancel()
-			log.Infoln("quit the program")
+			wg.Wait()
+			log.Println("all fetchers have successfully completed their work")
 			break LOOP
-		case depth := <-dataCh:
-			printDepth(*trackSymbol, depth)
+		case depth, opened := <-dataCh:
+			if opened {
+				printDepth(*trackSymbol, depth)
+			} else {
+				log.Infoln("stop all fetchers")
+				cancel()
+				wg.Wait()
+				log.Println("all fetchers stopped")
+				break LOOP
+			}
 		}
 	}
-	wg.Wait()
-	log.Println("all fetchers have successfully completed their work")
 }
 
 func printDepth(symbol string, depth *domain.Depth) {
