@@ -46,7 +46,7 @@ func (p *DeliveryProvider) restDepthDelivery(ctx context.Context, symbol string,
 
 // getDepth makes a request to receive the order book.
 func (p *DeliveryProvider) getDepth(symbol string, limit int) (*domain.Depth, error) {
-	reqUrl := fmt.Sprintf("", symbol, limit) // TODO: add url
+	reqUrl := fmt.Sprintf(p.apiConfig.GetDepthUrl, symbol, limit)
 	client := http.Client{
 		Timeout: time.Second * 10,
 	}
