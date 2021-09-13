@@ -6,9 +6,9 @@ import (
 )
 
 type ServiceConfig struct {
-	Symbols     []string
-	Limit       int
-	FetcherRate int `mapstructure:"rate"`
+	Symbols []string
+	Limit   int
+	Rate    int
 }
 
 func InitServiceConfig() (*ServiceConfig, error) {

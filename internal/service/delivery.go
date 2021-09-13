@@ -19,8 +19,8 @@ type DeliveryService struct {
 	dataChannels     map[string]chan *domain.Depth
 }
 
-func NewDeliveryService(serviceCfg *config.ServiceConfig) (DeliveryManager, error) {
-	symbols := serviceCfg.Symbols
+func NewDeliveryService(serviceConfig *config.ServiceConfig) (DeliveryManager, error) {
+	symbols := serviceConfig.Symbols
 	normalizeSymbolsList(symbols)
 
 	// create channels for receiving data
@@ -31,8 +31,8 @@ func NewDeliveryService(serviceCfg *config.ServiceConfig) (DeliveryManager, erro
 
 	service := DeliveryService{
 		symbols:      symbols,
-		limit:        serviceCfg.Limit,
-		fetcherRate:  time.Duration(serviceCfg.FetcherRate) * time.Second,
+		limit:        serviceConfig.Limit,
+		fetcherRate:  time.Duration(serviceConfig.Rate) * time.Second,
 		dataChannels: dataChannels,
 	}
 	return &service, nil
