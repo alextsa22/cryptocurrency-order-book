@@ -22,7 +22,7 @@ type DeliveryService struct {
 	deliveryProvider delivery.DepthDeliveryProvider
 }
 
-func NewDeliveryService(serviceConfig *config.ServiceConfig, deliveryProvider delivery.DepthDeliveryProvider) (DeliveryManager, error) {
+func NewDeliveryService(serviceConfig *config.ServiceConfig, deliveryProvider delivery.DepthDeliveryProvider) DeliveryManager {
 	symbols := serviceConfig.Symbols
 	normalizeSymbolsList(symbols)
 
@@ -39,7 +39,7 @@ func NewDeliveryService(serviceConfig *config.ServiceConfig, deliveryProvider de
 		dataChannels:     dataChannels,
 		deliveryProvider: deliveryProvider,
 	}
-	return &service, nil
+	return &service
 }
 
 // GetSymbols returns the set of available symbols.
