@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/alextsa22/cryptocurrency-order-book/internal/config"
 	"github.com/alextsa22/cryptocurrency-order-book/internal/domain"
 	"github.com/alextsa22/cryptocurrency-order-book/internal/service"
+	log "github.com/sirupsen/logrus"
 )
 
 // DepthFetcher implements a service.DepthService.
@@ -88,7 +88,7 @@ func (f *DepthFetcher) RunFetchers(wg *sync.WaitGroup) (context.Context, context
 // runFetcher needs to be run in a goroutine.
 // Writes the results of requests to get the order book into data channels.
 func (f *DepthFetcher) runFetcher(ctx context.Context, symbol string, dataCh chan *domain.Depth) {
-	log.Printf("order book fetcher for %s has been successfully launched", symbol)
+	log.Infof("order book fetcher for %s has been successfully launched", symbol)
 
 	ticker := time.NewTicker(f.fetcherRate)
 	defer ticker.Stop()
@@ -98,7 +98,7 @@ func (f *DepthFetcher) runFetcher(ctx context.Context, symbol string, dataCh cha
 		case <-ticker.C:
 			depth, err := fetchDepth(symbol, f.limit)
 			if err != nil {
-				log.Printf("fetchDepth: %v", err)
+				log.Errorf("fetchDepth: %v", err)
 				return
 			}
 			select {
@@ -111,7 +111,7 @@ func (f *DepthFetcher) runFetcher(ctx context.Context, symbol string, dataCh cha
 				dataCh <- depth
 			}
 		case <-ctx.Done():
-			log.Printf("order book fetcher for %s has been successfully completed", symbol)
+			log.Infof("order book fetcher for %s has been successfully completed", symbol)
 			return
 		}
 	}
@@ -129,7 +129,7 @@ func fetchDepth(symbol string, limit int) (*domain.Depth, error) {
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Printf("response body closing error: %v", err)
+			log.Errorf("response body closing error: %v", err)
 		}
 	}()
 

@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/alextsa22/cryptocurrency-order-book/internal/binance"
 	"github.com/alextsa22/cryptocurrency-order-book/internal/config"
 	"github.com/alextsa22/cryptocurrency-order-book/internal/domain"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -26,13 +26,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("config initialization error: %v", err)
 	}
-	log.Println("config initialization completed")
+	log.Infoln("config initialization completed")
 
 	depthService, err := binance.NewDepthFetcher(config)
 	if err != nil {
 		log.Fatalf("error creating binance depthService: %v", err)
 	}
-	log.Println("fetcher service has completed initialization")
+	log.Infoln("fetcher service has completed initialization")
 
 	log.Println("we initialize the process of launching fetchers")
 	wg := &sync.WaitGroup{}
@@ -46,26 +46,26 @@ func main() {
 	}
 	*trackSymbol = strings.TrimSpace(*trackSymbol)
 	*trackSymbol = strings.ToUpper(*trackSymbol)
-	log.Printf("%s symbol successfully set as tracked", *trackSymbol)
+	log.Infof("%s symbol successfully set as tracked", *trackSymbol)
 
 	dataCh, err := depthService.GetDataChannel(*trackSymbol)
 	if err != nil {
 		cancel()
 		log.Fatalf("error receiving data channel for the %s symbol: %v", *trackSymbol, err)
 	}
-	log.Printf("data channel for %s successfully received", *trackSymbol)
+	log.Infof("data channel for %s successfully received", *trackSymbol)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
-	log.Println("start application...")
+	log.Infof("start application...")
 	fmt.Println()
 LOOP:
 	for {
 		select {
 		case <-quit:
 			cancel()
-			log.Println("quit the program")
+			log.Infoln("quit the program")
 			break LOOP
 		case depth := <-dataCh:
 			printDepth(*trackSymbol, depth)
