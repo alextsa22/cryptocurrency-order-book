@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alextsa22/cryptocurrency-order-book/internal/config"
 	"github.com/alextsa22/cryptocurrency-order-book/internal/domain"
 	"github.com/alextsa22/cryptocurrency-order-book/internal/service"
 )
@@ -22,9 +23,10 @@ type DepthFetcher struct {
 	dataChannels map[string]chan *domain.Depth
 }
 
-func NewDepthFetcher(symbols []string, limit int, fetcherRate time.Duration) (service.DepthService, error) {
+func NewDepthFetcher(serviceCfg *config.ServiceConfig) (service.DepthService, error) {
+	symbols := serviceCfg.Symbols
 	normalizeSymbolsList(symbols)
-	
+
 	// create channels for receiving data
 	dataChannels := make(map[string]chan *domain.Depth)
 	for _, symbol := range symbols {
@@ -33,8 +35,8 @@ func NewDepthFetcher(symbols []string, limit int, fetcherRate time.Duration) (se
 
 	depth := DepthFetcher{
 		symbols:      symbols,
-		limit:        limit,
-		fetcherRate:  fetcherRate,
+		limit:        serviceCfg.Limit,
+		fetcherRate:  time.Duration(serviceCfg.FetcherRate) * time.Second,
 		dataChannels: dataChannels,
 	}
 	if err := depth.ping(); err != nil {
