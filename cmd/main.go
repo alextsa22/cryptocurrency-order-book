@@ -26,12 +26,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("config initialization error: %v", err)
 	}
+	log.Println("config initialization completed")
 
 	depthService, err := binance.NewDepthFetcher(config)
 	if err != nil {
 		log.Fatalf("error creating binance depthService: %v", err)
 	}
+	log.Println("fetcher service has completed initialization")
 
+	log.Println("we initialize the process of launching fetchers")
 	wg := &sync.WaitGroup{}
 	_, cancel := depthService.RunFetchers(wg)
 	if err != nil {
@@ -41,15 +44,22 @@ func main() {
 	if *trackSymbol == "" {
 		trackSymbol = &config.Symbols[0]
 	}
+	*trackSymbol = strings.TrimSpace(*trackSymbol)
+	*trackSymbol = strings.ToUpper(*trackSymbol)
+	log.Printf("%s symbol successfully set as tracked", *trackSymbol)
+
 	dataCh, err := depthService.GetDataChannel(*trackSymbol)
 	if err != nil {
 		cancel()
 		log.Fatalf("error receiving data channel for the %s symbol: %v", *trackSymbol, err)
 	}
+	log.Printf("data channel for %s successfully received", *trackSymbol)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 
+	log.Println("start application...")
+	fmt.Println()
 LOOP:
 	for {
 		select {
@@ -62,11 +72,10 @@ LOOP:
 		}
 	}
 	wg.Wait()
+	log.Println("all fetchers have successfully completed their work")
 }
 
 func printDepth(symbol string, depth *domain.Depth) {
-	symbol = strings.TrimSpace(symbol)
-	symbol = strings.ToUpper(symbol)
 	fmt.Printf("Symbol: %s    Last Update: %d\n", symbol, depth.LastUpdateId)
 	fmt.Println("Bids:")
 	printOrders(depth.Bids)

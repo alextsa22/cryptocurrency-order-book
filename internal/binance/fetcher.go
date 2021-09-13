@@ -81,12 +81,15 @@ func (f *DepthFetcher) RunFetchers(wg *sync.WaitGroup) (context.Context, context
 			f.runFetcher(ctx, symbol, dataCh)
 		}(symbol, ch)
 	}
+	time.Sleep(time.Second) // give a little time to initialize the goroutines
 	return ctx, cancel
 }
 
 // runFetcher needs to be run in a goroutine.
 // Writes the results of requests to get the order book into data channels.
 func (f *DepthFetcher) runFetcher(ctx context.Context, symbol string, dataCh chan *domain.Depth) {
+	log.Printf("order book fetcher for %s has been successfully launched", symbol)
+
 	ticker := time.NewTicker(f.fetcherRate)
 	defer ticker.Stop()
 
@@ -108,6 +111,7 @@ func (f *DepthFetcher) runFetcher(ctx context.Context, symbol string, dataCh cha
 				dataCh <- depth
 			}
 		case <-ctx.Done():
+			log.Printf("order book fetcher for %s has been successfully completed", symbol)
 			return
 		}
 	}
