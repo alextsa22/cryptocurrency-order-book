@@ -22,17 +22,36 @@ type DepthFetcher struct {
 	dataChannels map[string]chan *domain.Depth
 }
 
-func NewDepthFetcher(symbols []string) service.DepthService {
+func NewDepthFetcher(symbols []string, limit int, fetcherRate time.Duration) (service.DepthService, error) {
+	normalizeSymbolsList(symbols)
+	
 	// create channels for receiving data
 	dataChannels := make(map[string]chan *domain.Depth)
 	for _, symbol := range symbols {
 		dataChannels[symbol] = make(chan *domain.Depth, 10)
 	}
 
-	return &DepthFetcher{
+	depth := DepthFetcher{
 		symbols:      symbols,
+		limit:        limit,
+		fetcherRate:  fetcherRate,
 		dataChannels: dataChannels,
 	}
+	if err := depth.ping(); err != nil {
+		return nil, fmt.Errorf("ping: %v", err)
+	}
+	return &depth, nil
+}
+
+func (f *DepthFetcher) ping() error {
+	client := http.Client{
+		Timeout: time.Second * 10,
+	}
+	_, err := client.Get(pingUrl)
+	if err != nil {
+		return fmt.Errorf("unsuccessful get request: %v", err)
+	}
+	return nil
 }
 
 // GetSymbols returns a slice of symbols that fetchers collect.
@@ -42,6 +61,7 @@ func (f *DepthFetcher) GetSymbols() []string {
 
 // GetDataChannel returns the channel into which data about the specified character is written.
 func (f *DepthFetcher) GetDataChannel(symbol string) (<-chan *domain.Depth, error) {
+	symbol = normalizeSymbol(symbol)
 	ch, exists := f.dataChannels[symbol]
 	if !exists {
 		return nil, fmt.Errorf("symbol %s not found", symbol)
