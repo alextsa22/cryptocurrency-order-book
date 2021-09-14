@@ -10,11 +10,23 @@ Then display the resulting information in a convenient format.
 
 **Data collection method:**
 * ✅`Low level`: Using the REST protocol at a rate of 1 request / sec.
-* 🔲`High level`: Continuous over the WebSocket protocol.
+* ✅`High level`: Continuous over the WebSocket protocol.
 
 **Display method:**
 * ✅`Low level`: In cmd.
 * 🔲`High level`: In a web browser.
+
+Installation
+------------
+
+To run, you need to install [Docker](https://docs.docker.com/).
+
+You must make a copy of the vendor dependencies before using [Dockerfile.dev](Dockerfile.dev).
+This can be done using the command:
+
+```
+go mod vendor
+```
 
 Running
 -------
@@ -28,11 +40,17 @@ make build & make run
 Or you can use docker commands directly:
 
 ```
-docker build -t fetcher .
+docker build -t delivery-service .
 ```
 
 ```
-docker run --rm -t -i fetcher
+docker run --rm -t -i delivery-service
+```
+
+Run Dev:
+
+```
+docker build -t delivery-service -f Dockerfile.dev .
 ```
 
 ### Note
@@ -42,6 +60,8 @@ You can stop the program with ```Ctrl + C```.
 Example
 -------
 
+Launch with delivery over websockets:
+
 <p align="center">
-    <img src="assets/screenshot-v1.0.png">
+    <img src="assets/screenshot-v2.0.png">
 </p>
