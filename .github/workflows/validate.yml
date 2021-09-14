@@ -3,9 +3,12 @@ name: Validate
 on:
   push:
     branches:
-      - master
+      - main
     tags:
       - 'v*'
+  pull_request:
+    branches:
+      - main
 
 jobs:
   golangci:

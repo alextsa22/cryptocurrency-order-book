@@ -2,7 +2,11 @@ name: Deploy
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test-build:
