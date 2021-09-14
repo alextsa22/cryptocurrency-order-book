@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 
-	"github.com/alextsa22/cryptocurrency-order-book/internal/binance"
 	"github.com/alextsa22/cryptocurrency-order-book/internal/config"
+	"github.com/alextsa22/cryptocurrency-order-book/internal/config/binance"
+	providers "github.com/alextsa22/cryptocurrency-order-book/internal/delivery/binance"
 	"github.com/alextsa22/cryptocurrency-order-book/internal/domain"
+	"github.com/alextsa22/cryptocurrency-order-book/internal/service"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,15 +31,21 @@ func main() {
 	}
 	log.Infoln("config initialization completed")
 
-	depthService, err := binance.NewDepthFetcher(config)
+	apiConfig, err := binance.InitAPIConfig()
 	if err != nil {
-		log.Fatalf("error creating binance depthService: %v", err)
+		log.Fatalf("binance api config initialization error: %v", err)
 	}
-	log.Infoln("fetcher service has completed initialization")
+	log.Infof("binance api config initialization complete")
 
-	log.Println("we initialize the process of launching fetchers")
+	// If you want to use websockets for delivery,
+	// just replace provider.RestMethod with provider.WebSocket.
+	var method providers.DeliveryMethod = providers.RestMethod
+	provider := providers.NewDeliveryProvider(config, apiConfig, method)
+	deliveryService := service.NewDeliveryService(config, provider)
+
+	log.Println("we initialize the process of launching providers")
 	wg := &sync.WaitGroup{}
-	_, cancel := depthService.RunFetchers(wg)
+	_, cancel := deliveryService.RunProviders(wg)
 	if err != nil {
 		log.Fatalf("cant run fetchers with error: %v", err)
 	}
@@ -48,7 +57,7 @@ func main() {
 	*trackSymbol = strings.ToUpper(*trackSymbol)
 	log.Infof("%s symbol successfully set as tracked", *trackSymbol)
 
-	dataCh, err := depthService.GetDataChannel(*trackSymbol)
+	dataCh, err := deliveryService.GetDataChannel(*trackSymbol)
 	if err != nil {
 		log.Errorf("error receiving data channel for the %s symbol: %v", *trackSymbol, err)
 		cancel()
@@ -70,16 +79,16 @@ LOOP:
 			log.Infoln("graceful shutdown")
 			cancel()
 			wg.Wait()
-			log.Println("all fetchers have successfully completed their work")
+			log.Println("all providers have successfully completed their work")
 			break LOOP
 		case depth, opened := <-dataCh:
 			if opened {
 				printDepth(*trackSymbol, depth)
 			} else {
-				log.Infoln("stop all fetchers")
+				log.Infoln("stop all providers")
 				cancel()
 				wg.Wait()
-				log.Println("all fetchers stopped")
+				log.Println("all providers stopped")
 				break LOOP
 			}
 		}
@@ -87,18 +96,26 @@ LOOP:
 }
 
 func printDepth(symbol string, depth *domain.Depth) {
+	fmt.Println()
 	fmt.Printf("Symbol: %s    Last Update: %d\n", symbol, depth.LastUpdateId)
+
 	fmt.Println("Bids:")
 	printOrders(depth.Bids)
-	fmt.Printf("\tSum of order quantity: %.5f\n", depth.SumOfBidsQuantity())
+	sum := depth.SumOfBidsQuantity()
+	fmt.Printf("\tSum of order quantity: %.5f\n", sum)
+
 	fmt.Println("Asks:")
 	printOrders(depth.Asks)
-	fmt.Printf("\tSum of order quantity: %.5f\n", depth.SumOfAsksQuantity())
+	sum = depth.SumOfAsksQuantity()
+	fmt.Printf("\tSum of order quantity: %.5f\n", sum)
+
 	fmt.Println()
 }
 
-func printOrders(orders []*domain.Order) {
+func printOrders(orders [][]string) {
 	for _, order := range orders {
-		fmt.Printf("\tPrice: %.2f    Quantity: %.5f\n", order.Price, order.Quantity)
+		price, _ := strconv.ParseFloat(order[0], 64)
+		quantity, _ := strconv.ParseFloat(order[1], 64)
+		fmt.Printf("\tPrice: %.2f    Quantity: %.5f\n", price, quantity)
 	}
 }

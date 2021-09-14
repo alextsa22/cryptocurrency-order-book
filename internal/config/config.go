@@ -2,13 +2,14 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/spf13/viper"
 )
 
 type ServiceConfig struct {
-	Symbols     []string
-	Limit       int
-	FetcherRate int `mapstructure:"rate"`
+	Symbols []string
+	Limit   int
+	Rate    int
 }
 
 func InitServiceConfig() (*ServiceConfig, error) {
@@ -25,7 +26,7 @@ func InitServiceConfig() (*ServiceConfig, error) {
 	}
 
 	if len(cfg.Symbols) < 1 {
-		return nil, fmt.Errorf("unable to run 0 fetchers, please add symbols into config.yml")
+		return nil, fmt.Errorf("unable to run 0 providers, please add symbols into config.yml")
 	}
 
 	return &cfg, nil

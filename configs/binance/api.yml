@@ -1,0 +1,10 @@
+pingUrl: "https://www.binance.com/api/v3/ping"
+
+rest:
+  getDepthUrl: "https://www.binance.com/api/v3/depth?symbol=%s&limit=%d"
+
+ws:
+  scheme: "wss"
+  host: "stream.binance.com:9443"
+  path: "/ws/%s"
+  streamDepthName: "%s@depth%d"
