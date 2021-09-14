@@ -13,7 +13,9 @@ import (
 type DeliveryMethod int
 
 const (
+	// RestMethod indicates to use REST for delivery
 	RestMethod = iota
+	// WebSocket indicates to use WS for delivery
 	WebSocket
 )
 

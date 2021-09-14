@@ -13,6 +13,7 @@ import (
 
 // wsDepthDelivery delivers via WebSocket.
 func (p *DeliveryProvider) wsDepthDelivery(ctx context.Context, symbol string, limit int, dataCh chan *domain.Depth) {
+	log.Infof("order book provider for %s has been successfully launched", symbol)
 	// When connecting via web socket to Binance, you need to use a lowercase symbol.
 	lowerSymbol := strings.ToLower(symbol)
 	streamName := fmt.Sprintf(p.apiConfig.StreamDepthName, lowerSymbol, limit)
@@ -22,33 +23,48 @@ func (p *DeliveryProvider) wsDepthDelivery(ctx context.Context, symbol string, l
 		Path:   fmt.Sprintf(p.apiConfig.Path, streamName),
 	}
 
+	// make a request to make sure the connection details are correct.
+	_, err := p.getDepth(symbol, limit)
+	if err != nil {
+		log.Errorf("getDepth: %v", err)
+		log.Infof("order book provider for %s stopped", symbol)
+		close(dataCh)
+		return
+	}
+
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		log.Printf("websocket connection error with default dialer: %v", err)
+		log.Errorf("websocket connection error with default dialer: %v", err)
+		log.Infof("order book provider for %s stopped", symbol)
 		close(dataCh)
 		return
 	}
 	defer conn.Close()
 
-	var depth domain.Depth
 	for {
-		err := conn.ReadJSON(&depth)
-		if err != nil {
-			log.Printf("json read error: %v", err)
-			close(dataCh)
-			return
-		}
 		select {
 		case <-ctx.Done():
 			log.Infof("order book provider for %s has been successfully completed", symbol)
+			close(dataCh)
 			return
-		case dataCh <- &depth:
 		default:
-			// This is done if no one is reading from the channel, and it is full.
-			// In this case, we read from it ourselves and write a new value.
-			// If someone starts reading from the channel, they will receive more recent data.
-			<-dataCh
-			dataCh <- &depth
+			var depth domain.Depth
+			err := conn.ReadJSON(&depth)
+			if err != nil {
+				log.Errorf("json read error: %v", err)
+				log.Infof("order book provider for %s stopped", symbol)
+				close(dataCh)
+				return
+			}
+			select {
+			case dataCh <- &depth:
+			default:
+				// This is done if no one is reading from the channel, and it is full.
+				// In this case, we read from it ourselves and write a new value.
+				// If someone starts reading from the channel, they will receive more recent data.
+				<-dataCh
+				dataCh <- &depth
+			}
 		}
 	}
 }
